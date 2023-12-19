@@ -17,6 +17,9 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Images } from "../constants/Images";
+import { Colors } from "../constants/Colors";
+import { ColorsArray } from "../constants/Constants";
+import CustomAlert from "../components/CustomAlert";
 
 interface Note {
   title: string;
@@ -26,25 +29,27 @@ interface Note {
 
 const width = Dimensions.get("window").width;
 
-const Colors = [
-  { id: 1, color: "#2d2e31" },
-  { id: 2, color: "#5b2b2a" },
-  { id: 3, color: "#604a1d" },
-  { id: 4, color: "#635c1f" },
-  { id: 5, color: "#355853" },
-  { id: 6, color: "#19504b" },
-  { id: 7, color: "#21555d" },
-  { id: 8, color: "#153b5e" },
-];
 const Notes: React.FC = () => {
+  const [showAlert, setShowAlert] = useState(false);
   const [notes, setNotes] = useState<Note[]>([]);
   const [title, setTitle] = useState<string>("");
   const [content, setContent] = useState<string>("");
-  const [color, setColor] = useState<string>("#2d2e31");
+  const [color, setColor] = useState<string>(Colors.METALIC);
   const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
+
+  const translateYAnim = useRef(new Animated.Value(300)).current;
+
+  const openAlert = () => {
+    setShowAlert(true);
+  };
+
+  const closeAlert = () => {
+    setShowAlert(false);
+  };
 
   useEffect(() => {
     const filtered = notes.filter(
@@ -55,11 +60,13 @@ const Notes: React.FC = () => {
     setFilteredNotes(filtered);
   }, [searchQuery, notes]);
 
-  const translateYAnim = useRef(new Animated.Value(300)).current;
+  useEffect(() => {
+    fetchNotes();
+  }, []);
 
   const saveNotes = async (updatedNotes: Note[]) => {
     try {
-      await AsyncStorage.setItem("@notes", JSON.stringify(updatedNotes));
+      await AsyncStorage.setItem("data", JSON.stringify(updatedNotes));
     } catch (e) {
       console.error("Error saving notes:", e);
     }
@@ -67,7 +74,7 @@ const Notes: React.FC = () => {
 
   const fetchNotes = async () => {
     try {
-      const savedNotes = await AsyncStorage.getItem("@notes");
+      const savedNotes = await AsyncStorage.getItem("data");
       if (savedNotes !== null) {
         setNotes(JSON.parse(savedNotes));
       }
@@ -98,15 +105,16 @@ const Notes: React.FC = () => {
       }
       setTitle("");
       setContent("");
-      setColor("#2d2e31");
+      setColor(Colors.METALIC);
     }
   };
 
-  const deleteNote = (index: number) => {
+  const deleteNote = () => {
     const updatedNotes = [...notes];
-    updatedNotes.splice(index, 1);
+    updatedNotes.splice(deleteIndex!, 1);
     saveNotes(updatedNotes);
     setNotes(updatedNotes);
+    setShowAlert(false);
   };
 
   const openEditModal = (index: number) => {
@@ -122,10 +130,6 @@ const Notes: React.FC = () => {
     setColor(chosenColor);
   };
 
-  useEffect(() => {
-    fetchNotes();
-  }, []);
-
   const renderItem = ({ item, index }: { item: Note; index: number }) => {
     return (
       <View>
@@ -134,13 +138,15 @@ const Notes: React.FC = () => {
           onPress={() => openEditModal(index)}
         >
           <Text style={styles.noteTitle}>{item.title}</Text>
-          <Text style={{ color: "#b0b0b2" }}>{item.content}</Text>
+          <Text style={{ color: Colors.LIGHT_GREY }}>{item.content}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => deleteNote(index)}
+          onPress={() => {
+            setDeleteIndex(index), openAlert();
+          }}
           style={styles.deleteButton}
         >
-          <Text style={{ color: "white" }}>X</Text>
+          <Text style={{ color: Colors.WHITE }}>X</Text>
         </TouchableOpacity>
       </View>
     );
@@ -151,12 +157,19 @@ const Notes: React.FC = () => {
       <TextInput
         style={styles.searchInput}
         placeholder="Search your notes"
-        placeholderTextColor={"#888"}
+        placeholderTextColor={Colors.GRAY}
         value={searchQuery}
         onChangeText={(text: React.SetStateAction<string>) =>
           setSearchQuery(text)
         }
       />
+      <CustomAlert
+        isVisible={showAlert}
+        message="Are you sure you want to delete this note"
+        onClose={closeAlert}
+        onDelete={deleteNote}
+      />
+
       <TouchableOpacity
         style={styles.floatingButton}
         onPress={() => {
@@ -199,7 +212,7 @@ const Notes: React.FC = () => {
                 style={styles.input}
                 placeholder="Title"
                 value={title}
-                placeholderTextColor={"#ACACAC"}
+                placeholderTextColor={Colors.LIGHT_GREY}
                 onChangeText={(text: React.SetStateAction<string>) =>
                   setTitle(text)
                 }
@@ -208,7 +221,7 @@ const Notes: React.FC = () => {
                 style={styles.input2}
                 placeholder="Note"
                 value={content}
-                placeholderTextColor={"#ACACAC"}
+                placeholderTextColor={Colors.LIGHT_GREY}
                 onChangeText={(text: React.SetStateAction<string>) =>
                   setContent(text)
                 }
@@ -221,7 +234,7 @@ const Notes: React.FC = () => {
                 >
                   <Image
                     source={Images.colorPicker}
-                    style={{ height: 30, width: 30, tintColor: "#ACACAC" }}
+                    style={styles.pickerImage}
                   />
                 </TouchableOpacity>
               </View>
@@ -235,11 +248,11 @@ const Notes: React.FC = () => {
                 ]}
               >
                 <View style={styles.colour}>
-                  <Text style={{ color: "#ACACAC" }}>Colour</Text>
+                  <Text style={{ color: Colors.LIGHT_GREY }}>Colour</Text>
                 </View>
 
                 <FlatList
-                  data={Colors}
+                  data={ColorsArray}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   keyExtractor={(item: any, index: { toString: () => any }) =>
@@ -277,7 +290,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 50,
     paddingHorizontal: 20,
-    backgroundColor: "#202124",
+    backgroundColor: Colors.LIGHT_BLACK,
   },
   inputContainer: {
     paddingHorizontal: Platform.OS === "ios" ? "4%" : "3%",
@@ -287,18 +300,11 @@ const styles = StyleSheet.create({
   input: {
     padding: 10,
     fontSize: 20,
-    color: "#ACACAC",
+    color: Colors.LIGHT_GREY,
   },
   input2: {
     padding: 10,
-    color: "#ACACAC",
-  },
-  addButton: {
-    backgroundColor: "#4caf50",
-    alignItems: "center",
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
+    color: Colors.LIGHT_GREY,
   },
   colorOptionsContainer: {
     flexDirection: "row",
@@ -319,10 +325,11 @@ const styles = StyleSheet.create({
   emptyListContainer: {
     justifyContent: "center",
     alignItems: "center",
+    marginTop: "25%",
   },
   emptyListText: {
     fontSize: 18,
-    color: "#888",
+    color: Colors.GRAY,
   },
   noteItem: {
     borderWidth: 0.4,
@@ -330,8 +337,8 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 20,
     borderRadius: 10,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
+    backgroundColor: Colors.WHITE,
+    shadowColor: Colors.BLACK,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
@@ -341,14 +348,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 10,
     fontSize: 18,
-    color: "#ffffff",
+    color: Colors.WHITE,
   },
   animatedView: {
     position: "absolute",
     bottom: 0,
     width: width,
     padding: 20,
-    backgroundColor: "#232222",
+    backgroundColor: Colors.RAISN_BLACK,
     borderTopWidth: 0.5,
     alignSelf: "center",
   },
@@ -357,7 +364,7 @@ const styles = StyleSheet.create({
     top: 5,
     right: 5,
     borderWidth: 1,
-    borderColor: "white",
+    borderColor: Colors.WHITE,
     borderRadius: 50,
     width: 20,
     height: 20,
@@ -378,7 +385,7 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   floatingButtonText: {
-    color: "#fff",
+    color: Colors.WHITE,
     fontSize: 40,
     lineHeight: 40,
   },
@@ -387,23 +394,18 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 20,
   },
-  openButton: {
-    backgroundColor: "#F194FF",
-    borderRadius: 20,
-    padding: 10,
-  },
   closeButton: {
     borderRadius: 20,
     padding: 10,
   },
   textStyle: {
-    color: "white",
+    color: Colors.WHITE,
     fontWeight: "bold",
     textAlign: "center",
   },
   searchInput: {
-    backgroundColor: "#2d2e31",
-    color: "#888",
+    backgroundColor: Colors.METALIC,
+    color: Colors.GRAY,
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 10,
@@ -412,7 +414,7 @@ const styles = StyleSheet.create({
   back: {
     height: 30,
     width: 30,
-    tintColor: "#ACACAC",
+    tintColor: Colors.LIGHT_GREY,
     resizeMode: "contain",
   },
   colour: {
@@ -422,8 +424,13 @@ const styles = StyleSheet.create({
   tick: {
     height: 20,
     width: 20,
-    tintColor: "#ACACAC",
+    tintColor: Colors.LIGHT_GREY,
     resizeMode: "contain",
+  },
+  pickerImage: {
+    height: 30,
+    width: 30,
+    tintColor: Colors.LIGHT_GREY,
   },
 });
 

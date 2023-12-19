@@ -1,8 +1,15 @@
-1. i have created created a single app.js
-2. i have added a floating button on which you can click and then a modal appears in which you can write title and content.
-3. in the downside of modal there is an icon on which you can click and then there is color options appears.
-4. by clicking on any one color the modal color will be the same as the color you selected.
-5. by clicking on the back arrow you will redirect to main screen where you will see the latest note on the top of the screen.
-6. there is an delete icon also there on which you can click and delete any particular note.
-7. by clicking on any noite you can modify the note as well.
-8. there is a search bar also aviailable on the top on which you can enter any character an the notes will filterout
+1. I've developed a screen called "Notes" and integrated it within the App.js file.
+
+2. Added a floating button that opens a modal, allowing input for title and content.
+
+3. At the bottom of the modal, there's an icon that triggers a color palette selection.
+
+4. Selecting a color from the palette updates the modal's color scheme.
+
+5. Clicking the back arrow i have added the add button on back arrow then it navigates back to the main screen, displaying the latest note at the top.
+
+6. A delete icon prompts an alert box with options "Cancel" and "Yes." "Cancel" dismisses alert,while "Yes" removes a specific note by its index.
+
+7. Modifying note content is possible by clicking on any note.
+
+8. A search bar, positioned at the top, filters notes as characters are entered.
